@@ -1,0 +1,157 @@
+// db.ts
+import { createClient } from 'npm:@supabase/supabase-js@2.33.0';
+import { getEnv } from './utils.ts';
+export function initSupabase() {
+  const url = getEnv('SUPABASE_URL');
+  const key = getEnv('SUPABASE_SERVICE_ROLE_KEY');
+  if (!url || !key) return null;
+  return createClient(url, key, {
+    auth: {
+      persistSession: false
+    }
+  });
+}
+export async function findUserIdByOpenId(openid) {
+  const supabase = initSupabase();
+  if (!supabase) {
+      return { error: new Error('Supabase client not initialized') };
+  }
+  const { data, error } = await supabase.from('users').select('id').eq('open_id', openid).limit(1).maybeSingle();
+  if (error) return {
+    error
+  };
+  if (!data) return {
+    notFound: true
+  };
+  return {
+    id: data.id
+  };
+}
+
+export async function findOrCreateUser(openid) {
+  const supabase = initSupabase();
+  if (!supabase) {
+      return { error: new Error('Supabase client not initialized') };
+  }
+
+  // First, try to find the user
+  const { data: existingUser, error: findError } = await supabase
+    .from('users')
+    .select('id')
+    .eq('open_id', openid)
+    .limit(1)
+    .maybeSingle();
+
+  if (findError) {
+    return { error: findError };
+  }
+
+  // If user exists, return their id
+  if (existingUser) {
+    return { id: existingUser.id };
+  }
+
+  // If user doesn't exist, create them
+  const now = new Date().toISOString();
+  const { data: newUser, error: createError } = await supabase
+    .from('users')
+    .insert({
+      open_id: openid,
+      created_at: now,
+      updated_at: now
+    })
+    .select('id')
+    .single();
+
+  if (createError) {
+    return { error: createError };
+  }
+
+  return { id: newUser.id };
+}
+export async function fetchExperiencesWithTopics(userId) {
+  const supabase = initSupabase();
+  if (!supabase) {
+      return {  error: new Error('Supabase client not initialized') };
+  }
+  const { data, error } = await supabase.from('experiences').select('id, topic_id, created_at, updated_at, topics(id, name, description, cover_url)').eq('user_id', userId);
+  return {
+    data,
+    error
+  };
+}
+
+export async function oneExperienceById(id) {
+  const supabase = initSupabase();
+  if (!supabase) {
+      return {  error: new Error('Supabase client not initialized') };
+  }
+  const { data, error } = await supabase.from('experiences').select(`*, replies:replies(*), topic:topics(*, questions:questions(*, answers:answers(*)))`).eq('id', id).limit(1).maybeSingle();
+  return {
+    data,
+    error
+  };
+}
+
+export async function saveExperience(userId, topicId, answers) {
+  const supabase = initSupabase();
+  if (!supabase) {
+      return { error: new Error('Supabase client not initialized') };
+  }
+
+  const now = new Date().toISOString();
+
+  // 1. Create the experience record
+  const { data: experience, error: experienceError } = await supabase
+    .from('experiences')
+    .insert({
+      user_id: userId,
+      topic_id: topicId,
+      created_at: now,
+      updated_at: now
+    })
+    .select('id')
+    .single();
+
+  if (experienceError) {
+    return { error: experienceError };
+  }
+
+  const experienceId = experience.id;
+
+  // 2. Prepare replies data (flatten the answers array)
+  const repliesData = [];
+
+  for (const answerItem of answers) {
+    const checks = Array.isArray(answerItem.check) ? answerItem.check : [answerItem.check];
+
+    for (const answerId of checks) {
+      repliesData.push({
+        experience_id: experienceId,
+        answer_id: answerId,
+        created_at: now,
+        updated_at: now
+      });
+    }
+  }
+
+  // 3. Insert all replies
+  if (repliesData.length > 0) {
+    const { error: repliesError } = await supabase
+      .from('replies')
+      .insert(repliesData);
+
+    if (repliesError) {
+      // Rollback: delete the experience if replies fail
+      await supabase.from('experiences').delete().eq('id', experienceId);
+      return { error: repliesError };
+    }
+  }
+
+  return {
+    data: {
+      experience_id: experienceId,
+      replies_count: repliesData.length
+    }
+  };
+}

@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cat:*)",
+      "Bash(supabase status:*)",
+      "Bash(supabase functions list:*)",
+      "Bash(curl:*)",
+      "Bash(psql:*)",
+      "Bash(supabase db reset:*)",
+      "Bash(supabase db execute:*)",
+      "Bash(python3:*)",
+      "Bash(supabase --help:*)",
+      "Bash(test:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
