@@ -215,15 +215,15 @@ function transformTopic(topic) {
  */
 function buildResponse(experienceBase, topic, questions, replies, summary) {
   return {
-
-    id: experienceBase.id,
-    topic_id: experienceBase.topic_id,
-    user_id: experienceBase.user_id,
-    created_at: experienceBase.created_at,
-    topic: transformTopic(topic),
-    questions,
-    replies: replies ?? [],
-    summary
-    
+    data: {
+      id: experienceBase.id,
+      topic_id: experienceBase.topic_id,
+      user_id: experienceBase.user_id,
+      created_at: experienceBase.created_at,
+      topic: transformTopic(topic),
+      questions,
+      replies: replies ?? [],
+      summary
+    }
   };
 }
