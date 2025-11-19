@@ -1,5 +1,5 @@
 import { oneExperienceById } from './db.ts';
-
+import { Request, Response, Answer, Question, Reply, Topic, Summary, ExperienceBase } from './types.ts';
 
 /**
  * Fetch a complete experience with all related data
@@ -11,70 +11,11 @@ import { oneExperienceById } from './db.ts';
  * - All answers for each question
  * - User's replies (selected answers)
  *
- * @param {Object} req - Request object
- * @param {Object} res - Response object
- * @returns {Promise<Object>} Response with complete experience data
- *
- * @example Request:
- * {
- *   "action": "fetchExperience",
- *   "experience_id": "123"
- * }
- *
- * @example Response:
- * {
- *   "success": true,
- *   "data": {
- *     "id": 123,
- *     "topic_id": 2,
- *     "user_id": 456,
- *     "created_at": "2024-01-01T00:00:00.000Z",
- *     "topic": {
- *       "id": 2,
- *       "name": "考试脑科学",
- *       "description": "...",
- *       "cover_url": "..."
- *     },
- *     "questions": [
- *       {
- *         "id": 3,
- *         "content": "Question text",
- *         "has_multiple_answers": false,
- *         "answers": [
- *           {
- *             "id": 17,
- *             "content": "Answer 1",
- *             "correct": false,
- *             "selected": false
- *           },
- *           {
- *             "id": 18,
- *             "content": "Answer 2",
- *             "correct": true,
- *             "selected": true
- *           }
- *         ]
- *       }
- *     ],
- *     "replies": [
- *       {
- *         "id": 1,
- *         "experience_id": 123,
- *         "answer_id": 18,
- *         "question_id": 3
- *       }
- *     ],
- *     "summary": {
- *       "total_questions": 6,
- *       "answered_questions": 6,
- *       "correct_answers": 4,
- *       "incorrect_answers": 2,
- *       "score_percentage": 66.67
- *     }
- *   }
- * }
+ * @param {Request} req - Request object
+ * @param {Response} res - Response object
+ * @returns {Promise<Response>} Response with complete experience data
  */
-export async function oneExperiencesHandler(req, res) {
+export async function oneExperiencesHandler(req: Request, res: Response): Promise<Response | any> {
   try {
     const { data, error } = await oneExperienceById(req.params.id);
 
@@ -94,7 +35,7 @@ export async function oneExperiencesHandler(req, res) {
     const rawQuestions = questionsData?.questions ?? [];
 
     // Create a set of reply answer_ids for quick lookup
-    const repliedAnswerIds = new Set(replies?.map(r => r.answer_id) ?? []);
+    const repliedAnswerIds = new Set<number>((replies as Reply[])?.map(r => r.answer_id) ?? []);
 
     // Transform data
     const questions = transformQuestions(rawQuestions, repliedAnswerIds);
@@ -103,19 +44,16 @@ export async function oneExperiencesHandler(req, res) {
 
     res.status(200).json(response);
 
-  } catch (err) {
+  } catch (err: any) {
     console.error(err);
     return res.status(500).json({ error: err.message });
   }
 }
 
-
-
-
 /**
  * Transform raw answer data with selection status
  */
-function transformAnswers(answers, repliedAnswerIds) {
+function transformAnswers(answers: any[], repliedAnswerIds: Set<number>): Answer[] {
   return (answers ?? []).map(answer => ({
     id: answer.id,
     content: answer.content,
@@ -127,7 +65,7 @@ function transformAnswers(answers, repliedAnswerIds) {
 /**
  * Transform raw questions data with answers
  */
-function transformQuestions(rawQuestions, repliedAnswerIds) {
+function transformQuestions(rawQuestions: any[], repliedAnswerIds: Set<number>): Question[] {
   return rawQuestions.map(question => {
     const answers = transformAnswers(question.answers, repliedAnswerIds);
 
@@ -143,7 +81,9 @@ function transformQuestions(rawQuestions, repliedAnswerIds) {
 /**
  * Check if a question is answered correctly
  */
-function isQuestionCorrect(question) {
+function isQuestionCorrect(question: Question): boolean {
+  if (!question.answers) return false;
+
   const selectedAnswers = question.answers.filter(a => a.selected);
   const correctAnswersForQuestion = question.answers.filter(a => a.correct);
 
@@ -156,21 +96,21 @@ function isQuestionCorrect(question) {
     return allSelectedAreCorrect && allCorrectAreSelected;
   } else {
     // Single answer: check if the selected answer is correct
-    return selectedAnswers.length > 0 && selectedAnswers[0].correct;
+    return selectedAnswers.length > 0 && (selectedAnswers[0].correct ?? false);
   }
 }
 
 /**
  * Calculate summary statistics for the experience
  */
-function calculateSummary(questions) {
+function calculateSummary(questions: Question[]): Summary {
   const totalQuestions = questions.length;
   let answeredQuestions = 0;
   let correctAnswers = 0;
   let incorrectAnswers = 0;
 
   for (const question of questions) {
-    const hasSelectedAnswer = question.answers.some(a => a.selected);
+    const hasSelectedAnswer = question.answers?.some(a => a.selected) ?? false;
 
     if (hasSelectedAnswer) {
       answeredQuestions++;
@@ -199,7 +139,7 @@ function calculateSummary(questions) {
 /**
  * Transform topic data
  */
-function transformTopic(topic) {
+function transformTopic(topic: any): Topic | null {
   if (!topic) return null;
 
   return {
@@ -213,7 +153,13 @@ function transformTopic(topic) {
 /**
  * Build the response object
  */
-function buildResponse(experienceBase, topic, questions, replies, summary) {
+function buildResponse(
+  experienceBase: any,
+  topic: any,
+  questions: Question[],
+  replies: any[],
+  summary: Summary
+) {
   return {
     data: {
       id: experienceBase.id,

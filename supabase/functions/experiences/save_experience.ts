@@ -1,18 +1,21 @@
 // save_experience.ts
 import { findOrCreateUser, saveExperience } from './db.ts';
-import { parseRequest, checkInternalToken } from './utils.ts';
+import { checkInternalToken } from './utils.ts';
+import { Request, Response, SaveExperienceBody, SaveExperienceAnswer, ValidationResult, UserResult } from './types.ts';
 
 /**
  * Extract and validate internal token from request
  */
-function extractInternalToken(req) {
-  return req.query.internal_token || req.headers['x-internal-token'] || null;
+function extractInternalToken(req: Request): string | null {
+  const tokenFromQuery = req.query.internal_token as string | undefined;
+  const tokenFromHeader = req.headers['x-internal-token'] as string | undefined;
+  return tokenFromQuery || tokenFromHeader || null;
 }
 
 /**
  * Validate required fields in request body
  */
-function validateRequiredFields(body) {
+function validateRequiredFields(body: SaveExperienceBody): ValidationResult {
   if (!body || !body.topic_id || !body.answers || !body.openid) {
     return {
       valid: false,
@@ -25,8 +28,8 @@ function validateRequiredFields(body) {
 /**
  * Parse and validate topic_id
  */
-function parseTopicId(topicId) {
-  const parsed = parseInt(topicId, 10);
+function parseTopicId(topicId: string | number): ValidationResult {
+  const parsed = typeof topicId === 'number' ? topicId : parseInt(topicId, 10);
   if (isNaN(parsed)) {
     return {
       valid: false,
@@ -39,7 +42,7 @@ function parseTopicId(topicId) {
 /**
  * Validate answers array structure
  */
-function validateAnswers(answers) {
+function validateAnswers(answers: any): ValidationResult {
   if (!Array.isArray(answers) || answers.length === 0) {
     return {
       valid: false,
@@ -62,7 +65,7 @@ function validateAnswers(answers) {
 /**
  * Validate request body and extract data
  */
-function validateAndParseRequest(body) {
+function validateAndParseRequest(body: SaveExperienceBody): ValidationResult {
   // Validate required fields
   const requiredCheck = validateRequiredFields(body);
   if (!requiredCheck.valid) {
@@ -85,7 +88,7 @@ function validateAndParseRequest(body) {
     valid: true,
     data: {
       openid: body.openid,
-      topicId: topicIdCheck.value,
+      topicId: topicIdCheck.value!,
       answers: body.answers
     }
   };
@@ -94,7 +97,7 @@ function validateAndParseRequest(body) {
 /**
  * Handle user creation/retrieval
  */
-async function getUserId(openid) {
+async function getUserId(openid: string): Promise<UserResult> {
   const userResult = await findOrCreateUser(openid);
 
   if (userResult.error) {
@@ -116,40 +119,11 @@ async function getUserId(openid) {
  *
  * Creates a new experience record with user answers to topic questions
  *
- * @param {Object} req - Request object
- * @param {Object} req.body - Request body
- * @param {string} req.body.openid - User's WeChat openid
- * @param {number} req.body.topic_id - Topic ID
- * @param {Array} req.body.answers - Array of answer objects
- * @param {Object} res - Response object
- * @returns {Promise<Object>} Response with saved experience data
- *
- * @example Request:
- * {
- *   "openid": "user_openid_123",
- *   "topic_id": 2,
- *   "answers": [
- *     {
- *       "question_id": 3,
- *       "check": 18
- *     },
- *     {
- *       "question_id": 4,
- *       "check": [19, 20]
- *     }
- *   ]
- * }
- *
- * @example Response:
- * {
- *   "success": true,
- *   "data": {
- *     "experience_id": 123,
- *     "replies_count": 3
- *   }
- * }
+ * @param {Request} req - Request object
+ * @param {Response} res - Response object
+ * @returns {Promise<Response>} Response with saved experience data
  */
-export async function saveExperienceHandler(req, res) {
+export async function saveExperienceHandler(req: Request, res: Response): Promise<Response | any> {
   try {
     // Validate internal token
     const internalToken = extractInternalToken(req);
@@ -165,7 +139,7 @@ export async function saveExperienceHandler(req, res) {
       return res.status(400).json({ error: validation.error });
     }
 
-    const { openid, topicId, answers } = validation.data;
+    const { openid, topicId, answers } = validation.data!;
 
     // Get or create user
     const userResult = await getUserId(openid);
@@ -189,7 +163,7 @@ export async function saveExperienceHandler(req, res) {
       data: saveResult.data
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Unexpected error in saveExperienceHandler:', error);
     return res.status(500).json({
       error: 'Internal Server Error',

@@ -1,17 +1,18 @@
 // my_experiences.ts
 import { checkInternalToken } from './utils.ts';
 import { findUserIdByOpenId, fetchExperiencesWithTopics } from './db.ts';
+import { Request, Response, ExperienceData } from './types.ts';
 
-export async function myExperiencesHandler(req, res) {
+export async function myExperiencesHandler(req: Request, res: Response): Promise<Response | any> {
   try {
     // Extract openid from query params or body
     const openid = req.query.openid?.trim() || req.body.openid?.trim() || null;
 
     // Extract internal token from query params, header, or body
     const internalToken = req.query.internal_token ||
-                          req.headers['x-internal-token'] ||
-                          req.body.internal_token ||
-                          null;
+      req.headers['x-internal-token'] ||
+      req.body.internal_token ||
+      null;
 
     // Validate openid
     if (!openid) {
@@ -48,7 +49,7 @@ export async function myExperiencesHandler(req, res) {
     }
 
     // Normalize response data
-    const normalized = (expResult.data || []).map((e) => ({
+    const normalized = (expResult.data || []).map((e: ExperienceData) => ({
       id: e.id,
       topic_id: e.topic_id,
       created_at: e.created_at,
