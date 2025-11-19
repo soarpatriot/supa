@@ -86,7 +86,10 @@ export async function oneExperienceById(id) {
   if (!supabase) {
       return {  error: new Error('Supabase client not initialized') };
   }
-  const { data, error } = await supabase.from('experiences').select(`*, replies:replies(*), topic:topics(*, questions:questions(*, answers:answers(*)))`).eq('id', id).limit(1).maybeSingle();
+  //topic:topics(*, questions:questions(*, answers:answers(*)))`
+  const { data, error } = await supabase.from('experiences').select(`*, replies:replies(*), 
+        topic:topics(*),
+        questions:topics(questions:questions(*, answers:answers(*)))`).eq('id', id).limit(1).maybeSingle();
   return {
     data,
     error

@@ -10,7 +10,8 @@
       "Bash(supabase db execute:*)",
       "Bash(python3:*)",
       "Bash(supabase --help:*)",
-      "Bash(test:*)"
+      "Bash(test:*)",
+      "Bash(deno check:*)"
     ],
     "deny": [],
     "ask": []
