@@ -91,4 +91,5 @@ export interface UserResult {
 
 export interface ExperienceData extends ExperienceBase {
     topics: any; // Using any here as the structure comes from DB join
+    time_ago?: string; // Chinese time ago description
 }

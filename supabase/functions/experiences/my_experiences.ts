@@ -54,6 +54,7 @@ export async function myExperiencesHandler(req: Request, res: Response): Promise
       topic_id: e.topic_id,
       created_at: e.created_at,
       updated_at: e.updated_at,
+      time_ago: e.time_ago,
       topic: e.topics ?? null
     }));
 
