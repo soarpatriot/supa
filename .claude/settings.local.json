@@ -4,7 +4,8 @@
       "Bash(psql:*)",
       "Bash(supabase db execute:*)",
       "Bash(supabase status:*)",
-      "Bash(docker exec:*)"
+      "Bash(docker exec:*)",
+      "Bash(supabase db reset:*)"
     ],
     "deny": [],
     "ask": []
