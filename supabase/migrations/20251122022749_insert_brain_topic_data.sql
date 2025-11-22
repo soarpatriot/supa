@@ -1,16 +1,17 @@
--- Insert into topics table and get the ID using RETURNING
+-- Insert brain science topic with questions and answers
 DO $$
 DECLARE
     v_topic_id INTEGER;
     v_question_id INTEGER;
 BEGIN
     -- Insert topic
-    INSERT INTO topics (name, description, cover_url,current_fee, original_fee)
+    INSERT INTO topics (name, description, cover_url, current_fee, original_fee)
     VALUES (
         '考试脑科学',
         '《考试脑科学》并不是一本充满高深术语或故弄玄虚通过标新立异、与众不同的言论来获得更多的关注的书，它根据目前脑科学研究成果和各种实验，总结出一系列用脑的好习惯和高效学习方法。学生时代我们的学习或许是为了考试，参加工作后，学习并不是单纯为了考试，但怎样科学用脑，在日常生活中理解事物，判断是非，应用所学知识，活出属于自己的多彩人生，是每个人都希望的。',
-        'cloud://learn-production-1fyzsv3105009f4.6c65-learn-production-1fyzsv3105009f4-1327392464/brain/brain.jpg'
-        ,199,999
+        'cloud://learn-production-1fyzsv3105009f4.6c65-learn-production-1fyzsv3105009f4-1327392464/brain/brain.jpg',
+        199,
+        999
     )
     RETURNING id INTO v_topic_id;
 

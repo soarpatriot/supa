@@ -17,6 +17,8 @@ export interface Topic {
     name: string;
     description?: string;
     cover_url?: string;
+    current_fee?: number;
+    original_fee?: number;
 }
 
 export interface Answer {

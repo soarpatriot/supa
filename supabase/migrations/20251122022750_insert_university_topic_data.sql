@@ -1,5 +1,4 @@
--- PostgreSQL compatible insert statements using DO block with variables and RETURNING clause
-
+-- Insert university topic with questions and answers
 DO $$
 DECLARE
     v_topic_id INTEGER;

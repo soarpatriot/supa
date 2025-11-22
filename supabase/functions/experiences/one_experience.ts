@@ -146,7 +146,9 @@ function transformTopic(topic: any): Topic | null {
     id: topic.id,
     name: topic.name,
     description: topic.description ?? '',
-    cover_url: topic.cover_url ?? ''
+    cover_url: topic.cover_url ?? '',
+    current_fee: topic.current_fee ?? 0,
+    original_fee: topic.original_fee ?? 0
   };
 }
 
@@ -162,10 +164,8 @@ function buildResponse(
 ) {
   return {
     data: {
-      id: experienceBase.id,
-      topic_id: experienceBase.topic_id,
-      user_id: experienceBase.user_id,
-      created_at: experienceBase.created_at,
+
+      ...experienceBase as ExperienceBase,
       topic: transformTopic(topic),
       questions,
       replies: replies ?? [],
