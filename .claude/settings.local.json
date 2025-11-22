@@ -5,7 +5,11 @@
       "Bash(supabase db execute:*)",
       "Bash(supabase status:*)",
       "Bash(docker exec:*)",
-      "Bash(supabase db reset:*)"
+      "Bash(supabase db reset:*)",
+      "Bash(cat:*)",
+      "Bash(supabase projects:*)",
+      "Bash(supabase db push:*)",
+      "Bash(supabase db:*)"
     ],
     "deny": [],
     "ask": []

@@ -196,3 +196,32 @@ export async function saveExperience(userId, topicId, answers) {
     }
   };
 }
+
+export async function updateExperiencePaid(experienceId) {
+  const supabase = initSupabase();
+  if (!supabase) {
+    return { error: new Error('Supabase client not initialized') };
+  }
+
+  const now = new Date().toISOString();
+
+  const { data, error } = await supabase
+    .from('experiences')
+    .update({
+      paid: true,
+      updated_at: now
+    })
+    .eq('id', experienceId)
+    .select('id, topic_id, user_id, paid, created_at, updated_at')
+    .maybeSingle();
+
+  if (error) {
+    return { error };
+  }
+
+  if (!data) {
+    return { notFound: true };
+  }
+
+  return { data };
+}

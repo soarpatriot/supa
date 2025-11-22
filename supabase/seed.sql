@@ -9,10 +9,11 @@ BEGIN
     -- ========================================
     -- Topic 1: 大学之路 (The Path to University)
     -- ========================================
-    INSERT INTO topics (name, description, cover_url)
+    INSERT INTO topics (name, description, cover_url, current_fee, original_fee)
     VALUES ('大学之路',
             '大学之路一书,作者从陪儿女选大学出发,引出什么是大学,为什么要上大学?在这个过程中,作者讲述了大学的历史由来以及如何演化到今天的大学。通过美国名校的特点和发展史,引人思考,大学在推动人类进步的各个方面所扮演的角色。什么是好的大学?什么是人生的大道?什么是我们值得我们努力奋斗并追求的?',
-            'cloud://learn-production-1fyzsv3105009f4.6c65-learn-production-1fyzsv3105009f4-1327392464/university/s33314356.jpg')
+            'cloud://learn-production-1fyzsv3105009f4.6c65-learn-production-1fyzsv3105009f4-1327392464/university/s33314356.jpg'
+            ,199,999)
     RETURNING id INTO v_topic_id;
 
     -- Question 1
@@ -48,11 +49,12 @@ BEGIN
     -- ========================================
     -- Topic 2: 考试脑科学 (Exam Brain Science)
     -- ========================================
-    INSERT INTO topics (name, description, cover_url)
+    INSERT INTO topics (name, description, cover_url, current_fee, original_fee)
     VALUES (
         '考试脑科学',
         '《考试脑科学》并不是一本充满高深术语或故弄玄虚通过标新立异、与众不同的言论来获得更多的关注的书，它根据目前脑科学研究成果和各种实验，总结出一系列用脑的好习惯和高效学习方法。学生时代我们的学习或许是为了考试，参加工作后，学习并不是单纯为了考试，但怎样科学用脑，在日常生活中理解事物，判断是非，应用所学知识，活出属于自己的多彩人生，是每个人都希望的。',
         'cloud://learn-production-1fyzsv3105009f4.6c65-learn-production-1fyzsv3105009f4-1327392464/brain/brain.jpg'
+        ,199,999
     )
     RETURNING id INTO v_topic_id;
 

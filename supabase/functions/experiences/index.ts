@@ -8,6 +8,7 @@ import express from "npm:express@4.18.2";
 import { myExperiencesHandler } from './my_experiences.ts';
 import { oneExperiencesHandler } from './one_experience.ts';
 import { saveExperienceHandler } from './save_experience.ts';
+import { updateExperienceHandler } from './update_experience.ts';
 
 const app = express();
 
@@ -19,6 +20,7 @@ const port = 3000
 app.get('/experiences', myExperiencesHandler)
 app.get('/experiences/:id', oneExperiencesHandler)
 app.post('/experiences', saveExperienceHandler)
+app.put('/experiences/:id/paid', updateExperienceHandler)
 
 
 app.listen(port, () => {
