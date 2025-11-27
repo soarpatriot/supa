@@ -14,7 +14,7 @@ export function initSupabase() {
 export async function findUserIdByOpenId(openid) {
   const supabase = initSupabase();
   if (!supabase) {
-      return { error: new Error('Supabase client not initialized') };
+    return { error: new Error('Supabase client not initialized') };
   }
   const { data, error } = await supabase.from('users').select('id').eq('open_id', openid).limit(1).maybeSingle();
   if (error) return {
@@ -31,7 +31,7 @@ export async function findUserIdByOpenId(openid) {
 export async function findOrCreateUser(openid) {
   const supabase = initSupabase();
   if (!supabase) {
-      return { error: new Error('Supabase client not initialized') };
+    return { error: new Error('Supabase client not initialized') };
   }
 
   // First, try to find the user
@@ -99,7 +99,7 @@ function getChineseTimeAgo(dateString: string): string {
 export async function fetchExperiencesWithTopics(userId) {
   const supabase = initSupabase();
   if (!supabase) {
-      return {  error: new Error('Supabase client not initialized') };
+    return { error: new Error('Supabase client not initialized') };
   }
   const { data, error } = await supabase
     .from('experiences')
@@ -122,11 +122,12 @@ export async function fetchExperiencesWithTopics(userId) {
 export async function oneExperienceById(id) {
   const supabase = initSupabase();
   if (!supabase) {
-      return {  error: new Error('Supabase client not initialized') };
+    return { error: new Error('Supabase client not initialized') };
   }
   //topic:topics(*, questions:questions(*, answers:answers(*)))`
   const { data, error } = await supabase.from('experiences').select(`*, replies:replies(*), 
         topic:topics(*),
+        assets:topics(assets:assets(*)),
         questions:topics(questions:questions(*, answers:answers(*)))`).eq('id', id).limit(1).maybeSingle();
   return {
     data,
@@ -137,7 +138,7 @@ export async function oneExperienceById(id) {
 export async function saveExperience(userId, topicId, answers) {
   const supabase = initSupabase();
   if (!supabase) {
-      return { error: new Error('Supabase client not initialized') };
+    return { error: new Error('Supabase client not initialized') };
   }
 
   const now = new Date().toISOString();
