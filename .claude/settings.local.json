@@ -10,7 +10,10 @@
       "Bash(supabase projects:*)",
       "Bash(supabase db push:*)",
       "Bash(supabase db:*)",
-      "Bash(supabase migration:*)"
+      "Bash(supabase migration:*)",
+      "Bash(supabase link:*)",
+      "Bash(claude mcp add:*)",
+      "Bash(supabase functions deploy:*)"
     ],
     "deny": [],
     "ask": []
