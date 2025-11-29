@@ -5,7 +5,7 @@
 // Setup type definitions for built-in Supabase Runtime APIs
 import "jsr:@supabase/functions-js/edge-runtime.d.ts"
 import express from "npm:express@4.18.2";
-import { analyzeBookWithGemini } from "./gemini.ts";
+import { analyzeBookWithGemini, generateFlashcardsWithGemini } from "./gemini.ts";
 
 const app = express();
 
@@ -39,7 +39,31 @@ app.post('/ai-service/book', async (req, res) => {
   }
 })
 
+app.post('/ai-service/notebook/card', async (req, res) => {
+  try {
+    const { content, count } = req.body;
 
+    if (!content) {
+      return res.status(400).json({
+        error: "Missing required field: content"
+      });
+    }
+
+    const cardCount = count && count > 0 ? count : 5;
+    const flashcards = await generateFlashcardsWithGemini(content, cardCount);
+
+    return res.status(200).json({
+      success: true,
+      data: flashcards
+    });
+  } catch (error) {
+    console.error("Error generating flashcards:", error);
+    return res.status(500).json({
+      error: "Failed to generate flashcards",
+      message: error.message
+    });
+  }
+})
 
 app.listen(port, () => {
   console.log(`Example app listening on port ${port}`)

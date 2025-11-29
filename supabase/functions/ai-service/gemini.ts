@@ -1,5 +1,5 @@
 import { GoogleGenAI, Type } from "@google/genai";
-import { AnalysisResult } from "./types.ts";
+import { AnalysisResult, FlashcardResult } from "./types.ts";
 
 const testKey = process.env.GOOGLE_API_KEY
 console.log("test key: " + testKey)
@@ -55,6 +55,57 @@ export const analyzeBookWithGemini = async (title: string, author: string): Prom
       summary: "暂时无法获取AI解读，请稍后再试。",
       keyPoints: ["深入阅读以获取更多智慧", "保持好奇心", "书山有路勤为径"],
       quote: "学而知之。"
+    };
+  }
+};
+
+export const generateFlashcardsWithGemini = async (content: string, count: number = 5): Promise<FlashcardResult> => {
+  const prompt = `Based on the following content, generate ${count} flashcards for studying.
+  Each flashcard should have a front (question or key concept) and back (answer or explanation).
+  Provide the output in Simplified Chinese (简体中文).
+
+  Content: ${content}`;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: "gemini-2.0-flash-exp",
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            cards: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  front: { type: Type.STRING, description: "The question or key concept" },
+                  back: { type: Type.STRING, description: "The answer or explanation" }
+                },
+                required: ["front", "back"]
+              },
+              description: "Array of flashcards"
+            }
+          },
+          required: ["cards"]
+        }
+      }
+    });
+
+    const text = response.text;
+
+    if (!text) {
+      throw new Error("No response from AI");
+    }
+    return JSON.parse(text) as FlashcardResult;
+  } catch (error) {
+    console.error("Gemini Flashcard Generation Failed", error);
+    // Fallback in case of error
+    return {
+      cards: [
+        { front: "暂时无法生成卡片", back: "请稍后再试" }
+      ]
     };
   }
 };

@@ -13,7 +13,12 @@
       "Bash(supabase migration:*)",
       "Bash(supabase link:*)",
       "Bash(claude mcp add:*)",
-      "Bash(supabase functions deploy:*)"
+      "Bash(supabase functions deploy:*)",
+      "Bash(supabase secrets set:*)",
+      "WebSearch",
+      "WebFetch(domain:notebooklm.google.com)",
+      "WebFetch(domain:ai.google.dev)",
+      "Bash(curl:*)"
     ],
     "deny": [],
     "ask": []
