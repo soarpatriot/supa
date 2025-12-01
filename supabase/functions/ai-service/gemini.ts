@@ -1,15 +1,9 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { AnalysisResult, FlashcardResult } from "./types.ts";
+import { GOOGLE_API_KEY } from "./config.ts";
 
-const testKey = process.env.GOOGLE_API_KEY
-console.log("test key: " + testKey)
-
-const apiKey = Deno.env.get("GOOGLE_API_KEY"); 
-if (!apiKey) {
-  throw new Error("GOOGLE_API_KEY environment variable not set");
-}
 const ai = new GoogleGenAI({
-  apiKey: apiKey
+  apiKey: GOOGLE_API_KEY
 });
 
 export const analyzeBookWithGemini = async (title: string, author: string): Promise<AnalysisResult> => {

@@ -18,9 +18,15 @@
       "WebSearch",
       "WebFetch(domain:notebooklm.google.com)",
       "WebFetch(domain:ai.google.dev)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "WebFetch(domain:www.npmjs.com)",
+      "Bash(supabase secrets list:*)"
     ],
     "deny": [],
     "ask": []
-  }
+  },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "supabase"
+  ]
 }
