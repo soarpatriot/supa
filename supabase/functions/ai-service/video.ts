@@ -1,12 +1,13 @@
 import { GoogleGenAI } from "npm:@google/genai";
-import { GOOGLE_API_KEY } from "./config.ts";
+import { GOOGLE_API_KEY, supabase } from "./config.ts";
 
 const ai = new GoogleGenAI({ apiKey: GOOGLE_API_KEY });
 
 export interface VideoGenerationResult {
-  videoPath: string;
-  filePath: string;
+  videoUrl: string;
+  storagePath: string;
   prompt: string;
+  operation: any;
 }
 
 export async function generateVideoWithGemini(
@@ -31,6 +32,7 @@ export async function generateVideoWithGemini(
     // Generate a unique filename
     const timestamp = Date.now();
     const filename = `generated_video_${timestamp}.mp4`;
+    const storagePath = `videos/${filename}`;
     const downloadPath = `/tmp/${filename}`;
 
     // Download the generated video to tmp file
@@ -39,12 +41,47 @@ export async function generateVideoWithGemini(
       downloadPath: downloadPath,
     });
 
-    console.log(`Generated video saved to ${downloadPath}`);
+    console.log(`Downloaded video to ${downloadPath}`);
+
+    // Read the file and upload to Supabase storage
+    const fileData = await Deno.readFile(downloadPath);
+
+    // Upload to Supabase storage
+    const { data, error } = await supabase.storage
+      .from('my-videos')
+      .upload(storagePath, fileData, {
+        contentType: 'video/mp4',
+        upsert: false
+      });
+
+    if (error) {
+      throw new Error(`Failed to upload video to storage: ${error.message}`);
+    }
+
+    console.log(`Video uploaded to Supabase storage: ${storagePath}`);
+
+    // Get public URL for the uploaded video
+    const { data: urlData } = supabase.storage
+      .from('my-videos')
+      .getPublicUrl(storagePath);
+
+    // Clean up temporary file
+    try {
+      await Deno.remove(downloadPath);
+      console.log(`Temporary file cleaned up: ${downloadPath}`);
+    } catch (cleanupError) {
+      console.warn("Failed to cleanup temp file:", cleanupError);
+    }
 
     return {
-      videoPath: filename,
-      filePath: downloadPath,
+      videoUrl: urlData.publicUrl,
+      storagePath: storagePath,
       prompt: prompt,
+      operation: {
+        name: operation.name,
+        done: operation.done,
+        metadata: operation.metadata
+      }
     };
   } catch (error) {
     console.error("Error generating video:", error);

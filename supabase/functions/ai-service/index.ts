@@ -160,8 +160,6 @@ app.get('/ai-service/notebook/:notebookId/cards', async (req, res) => {
 
 // Generate video from prompt
 app.post('/ai-service/videos', async (req, res) => {
-  let filePath: string | null = null;
-
   try {
     const { prompt } = req.body;
 
@@ -172,54 +170,18 @@ app.post('/ai-service/videos', async (req, res) => {
     }
 
     const videoResult = await generateVideoWithGemini(prompt);
-    filePath = videoResult.filePath;
 
-    // Get file stats for Content-Length
-    const fileInfo = await Deno.stat(filePath);
-
-    // Set appropriate headers for video download
-    res.setHeader('Content-Type', 'video/mp4');
-    res.setHeader('Content-Disposition', `attachment; filename="${videoResult.videoPath}"`);
-    res.setHeader('Content-Length', fileInfo.size.toString());
-
-    // Stream the video file
-    const file = await Deno.open(filePath, { read: true });
-
-    try {
-      // Create a readable stream from the file
-      const readableStream = file.readable;
-      const reader = readableStream.getReader();
-
-      // Stream chunks to response
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        res.write(value);
+    return res.status(200).json({
+      success: true,
+      data: {
+        videoUrl: videoResult.videoUrl,
+        storagePath: videoResult.storagePath,
+        prompt: videoResult.prompt,
+        operation: videoResult.operation
       }
-
-      res.end();
-    } finally {
-      // Close the file
-      file.close();
-
-      // Clean up the temporary file
-      try {
-        await Deno.remove(filePath);
-      } catch (cleanupError) {
-        console.warn("Failed to cleanup temp file:", cleanupError);
-      }
-    }
+    });
   } catch (error) {
     console.error("Error generating video:", error);
-
-    // Clean up temp file if it exists
-    if (filePath) {
-      try {
-        await Deno.remove(filePath);
-      } catch (cleanupError) {
-        console.warn("Failed to cleanup temp file on error:", cleanupError);
-      }
-    }
 
     return res.status(500).json({
       error: "Failed to generate video",
