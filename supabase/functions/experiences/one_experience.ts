@@ -58,6 +58,7 @@ function transformAnswers(answers: any[], repliedAnswerIds: Set<number>): Answer
     id: answer.id,
     content: answer.content,
     correct: answer.correct ?? false,
+    rationale: answer.rationale ?? '',
     selected: repliedAnswerIds.has(answer.id)
   }));
 }
