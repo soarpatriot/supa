@@ -10,15 +10,29 @@ export interface VideoGenerationResult {
   operation: any;
 }
 
+export interface VideoConfig {
+  aspectRatio?: string;
+  negativePrompt?: string;
+}
+
 export async function generateVideoWithGemini(
-  prompt: string
+  prompt: string,
+  model: string = "veo-3.1-generate-preview",
+  config?: VideoConfig
 ): Promise<VideoGenerationResult> {
   try {
     // Start video generation
-    let operation = await ai.models.generateVideos({
-      model: "veo-3.1-generate-preview",
+    const generateParams: any = {
+      model: model,
       prompt: prompt,
-    });
+    };
+
+    // Add config if provided
+    if (config) {
+      generateParams.config = config;
+    }
+
+    let operation = await ai.models.generateVideos(generateParams);
 
     // Poll the operation status until the video is ready
     while (!operation.done) {

@@ -161,7 +161,7 @@ app.get('/ai-service/notebook/:notebookId/cards', async (req, res) => {
 // Generate video from prompt
 app.post('/ai-service/videos', async (req, res) => {
   try {
-    const { prompt } = req.body;
+    const { prompt, model, config } = req.body;
 
     if (!prompt) {
       return res.status(400).json({
@@ -169,7 +169,12 @@ app.post('/ai-service/videos', async (req, res) => {
       });
     }
 
-    const videoResult = await generateVideoWithGemini(prompt);
+    // Use default model "veo-3.1-generate-preview" if not provided
+    const videoResult = await generateVideoWithGemini(
+      prompt,
+      model,
+      config
+    );
 
     return res.status(200).json({
       success: true,
