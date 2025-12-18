@@ -7,7 +7,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts"
 import express from "npm:express@4.18.2";
 import { analyzeBookWithGemini, generateFlashcardsWithGemini } from "./gemini.ts";
 import { getNotebookByNotebooklmId, createNotebook, updateNotebook, getFlashcardsByNotebookId, saveFlashcards } from "./db.ts";
-import { generateVideoWithGemini } from "./video.ts";
+import { generateVideoWithGemini, generateAndStreamVideo } from "./video.ts";
 
 const app = express();
 
@@ -169,7 +169,7 @@ app.post('/ai-service/videos', async (req, res) => {
       });
     }
 
-    // Use default model "veo-3.1-generate-preview" if not provided
+    // Use default model "veo-2.0-generate-001" if not provided
     const videoResult = await generateVideoWithGemini(
       prompt,
       model,
@@ -195,18 +195,80 @@ app.post('/ai-service/videos', async (req, res) => {
   }
 })
 
+// Generate and stream a single video
+app.post('/ai-service/one-video', async (req, res) => {
+  let cleanup: (() => Promise<void>) | null = null;
+
+  try {
+    const { prompt, model, config } = req.body;
+
+    if (!prompt) {
+      return res.status(400).json({
+        error: "Missing required field: prompt"
+      });
+    }
+
+    // Generate video and get the file path
+    const result = await generateAndStreamVideo(
+      prompt,
+      model,
+      config
+    );
+
+    cleanup = result.cleanup;
+
+    // Get file stats for content length
+    const fileInfo = await Deno.stat(result.filePath);
+
+    // Set appropriate headers for video streaming
+    res.setHeader('Content-Type', 'video/mp4');
+    res.setHeader('Content-Length', fileInfo.size.toString());
+    res.setHeader('Content-Disposition', 'inline; filename="generated_video.mp4"');
+
+    // Open the file and create a readable stream
+    const file = await Deno.open(result.filePath, { read: true });
+
+    // Create a Node.js readable stream from the Deno file
+    const readableStream = file.readable;
+
+    // Pipe the stream to the response
+    const reader = readableStream.getReader();
+
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        res.write(value);
+      }
+      res.end();
+    } finally {
+      reader.releaseLock();
+      file.close();
+
+      // Clean up the temporary file
+      if (cleanup) {
+        await cleanup();
+      }
+    }
+  } catch (error) {
+    console.error("Error generating and streaming video:", error);
+
+    // Clean up if error occurs
+    if (cleanup) {
+      try {
+        await cleanup();
+      } catch (cleanupError) {
+        console.warn("Failed to cleanup after error:", cleanupError);
+      }
+    }
+
+    return res.status(500).json({
+      error: "Failed to generate and stream video",
+      message: error.message
+    });
+  }
+})
+
 app.listen(port, () => {
   console.log(`Example app listening on port ${port}`)
 })
-
-/* To invoke locally:
-
-  1. Run `supabase start` (see: https://supabase.com/docs/reference/cli/supabase-start)
-  2. Make an HTTP request:
-
-  curl -i --location --request POST 'http://127.0.0.1:54321/functions/v1/gemini-service' \
-    --header 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0' \
-    --header 'Content-Type: application/json' \
-    --data '{"name":"Functions"}'
-
-*/

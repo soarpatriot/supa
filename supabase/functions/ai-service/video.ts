@@ -17,7 +17,7 @@ export interface VideoConfig {
 
 export async function generateVideoWithGemini(
   prompt: string,
-  model: string = "veo-3.1-generate-preview",
+  model: string = "veo-2.0-generate-001",
   config?: VideoConfig
 ): Promise<VideoGenerationResult> {
   try {
@@ -97,6 +97,64 @@ export async function generateVideoWithGemini(
         metadata: operation.metadata
       }
     };
+  } catch (error) {
+    console.error("Error generating video:", error);
+    throw new Error(`Failed to generate video: ${error.message}`);
+  }
+}
+
+export async function generateAndStreamVideo(
+  prompt: string,
+  model: string = "veo-2.0-generate-001",
+  config?: VideoConfig
+): Promise<{ filePath: string; cleanup: () => Promise<void> }> {
+  try {
+    // Start video generation
+    const generateParams: any = {
+      model: model,
+      prompt: prompt,
+    };
+
+    // Add config if provided
+    if (config) {
+      generateParams.config = config;
+    }
+
+    let operation = await ai.models.generateVideos(generateParams);
+
+    // Poll the operation status until the video is ready
+    while (!operation.done) {
+      console.log("Waiting for video generation to complete...");
+      await new Promise((resolve) => setTimeout(resolve, 10000));
+      operation = await ai.operations.getVideosOperation({
+        operation: operation,
+      });
+    }
+
+    // Generate a unique filename for temp storage
+    const timestamp = Date.now();
+    const filename = `generated_video_${timestamp}.mp4`;
+    const downloadPath = `/tmp/${filename}`;
+
+    // Download the generated video to tmp file
+    await ai.files.download({
+      file: operation.response.generatedVideos[0].video,
+      downloadPath: downloadPath,
+    });
+
+    console.log(`Downloaded video to ${downloadPath}`);
+
+    // Return the file path and a cleanup function
+    const cleanup = async () => {
+      try {
+        await Deno.remove(downloadPath);
+        console.log(`Temporary file cleaned up: ${downloadPath}`);
+      } catch (cleanupError) {
+        console.warn("Failed to cleanup temp file:", cleanupError);
+      }
+    };
+
+    return { filePath: downloadPath, cleanup };
   } catch (error) {
     console.error("Error generating video:", error);
     throw new Error(`Failed to generate video: ${error.message}`);

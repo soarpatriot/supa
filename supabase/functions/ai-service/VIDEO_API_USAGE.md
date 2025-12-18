@@ -15,7 +15,7 @@ POST /ai-service/videos
 
 ### Optional Parameters
 - **model** (string): The AI model to use for video generation
-  - Default: `"veo-3.1-generate-preview"`
+  - Default: `"veo-2.0-generate-001"`
   - You can specify other compatible models as needed
 
 - **config** (object): Configuration options for video generation
@@ -35,7 +35,7 @@ POST /ai-service/videos
 ```json
 {
   "prompt": "A cinematic shot of a majestic lion in the savannah.",
-  "model": "veo-3.1-generate-preview"
+  "model": "veo-2.0-generate-001"
 }
 ```
 
@@ -43,7 +43,7 @@ POST /ai-service/videos
 ```json
 {
   "prompt": "A cinematic shot of a majestic lion in the savannah.",
-  "model": "veo-3.1-generate-preview",
+  "model": "veo-2.0-generate-001",
   "config": {
     "aspectRatio": "16:9",
     "negativePrompt": "cartoon, drawing, low quality"
@@ -105,7 +105,7 @@ curl -X POST http://localhost:3000/ai-service/videos \
   -H "authorization: Bearer xxxxxx" \
   -d '{
     "prompt": "A cinematic shot of a majestic lion in the savannah.",
-    "model": "veo-3.1-generate-preview",
+    "model": "veo-2.0-generate-001",
     "config": {
       "aspectRatio": "16:9",
       "negativePrompt": "cartoon, drawing, low quality"
@@ -118,4 +118,4 @@ curl -X POST http://localhost:3000/ai-service/videos \
 - The API polls the generation status every 10 seconds until completion
 - Generated videos are automatically uploaded to Supabase storage
 - Temporary files are cleaned up after upload
-- The default model `"veo-3.1-generate-preview"` is used when no model is specified
+- The default model `"veo-2.0-generate-001"` is used when no model is specified
