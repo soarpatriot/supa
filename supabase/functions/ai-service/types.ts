@@ -12,33 +12,6 @@ export interface AnalysisResult {
   quote: string;
 }
 
-export interface Flashcard {
-  front: string;
-  back: string;
-}
-
-export interface FlashcardResult {
-  cards: Flashcard[];
-}
-
-export interface Notebook {
-  id: number;
-  notebooklm_id: string;
-  title: string;
-  content: string;
-  description?: string;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface StoredFlashcard {
-  id: number;
-  notebook_id: number;
-  front: string;
-  back: string;
-  created_at: string;
-}
-
 export enum Tab {
   HOME = 'HOME',
   PROFILE = 'PROFILE'

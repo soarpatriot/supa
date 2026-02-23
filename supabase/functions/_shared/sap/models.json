@@ -1,0 +1,59 @@
+{
+  "models": {
+    "gpt-5": {
+      "deploymentId": "dfa32decf7834b65",
+      "provider": "openai",
+      "displayName": "GPT-5"
+    },
+    "gpt-5-mini": {
+      "deploymentId": "d68c9f89e5d01e5d",
+      "provider": "openai",
+      "displayName": "GPT-5 Mini"
+    },
+    "gpt-5-nano": {
+      "deploymentId": "d222a2fc0d2b9f3b",
+      "provider": "openai",
+      "displayName": "GPT-5 Nano"
+    },
+    "claude-4.5-haiku": {
+      "deploymentId": "d73f486558249b52",
+      "provider": "anthropic",
+      "displayName": "Claude 4.5 Haiku"
+    },
+    "claude-4.5-sonnet": {
+      "deploymentId": "d937ccd079e1a3e7",
+      "provider": "anthropic",
+      "displayName": "Claude 4.5 Sonnet"
+    },
+    "claude-4.5-opus": {
+      "deploymentId": "d3d275fa3626adda",
+      "provider": "anthropic",
+      "displayName": "Claude 4.5 Opus"
+    },
+    "claude-4.6-opus": {
+      "deploymentId": "db74888877891975",
+      "provider": "anthropic",
+      "displayName": "Claude 4.6 Opus"
+    },
+    "claude-4.6-sonnet": {
+      "deploymentId": "dd37dfd7b4af66ff",
+      "provider": "anthropic",
+      "displayName": "Claude 4.6 Sonnet"
+    },
+    "gemini-2.5-pro": {
+      "deploymentId": "d2d6a4600af36f16",
+      "provider": "google",
+      "displayName": "Gemini 2.5 Pro"
+    },
+    "gemini-2.5-flash": {
+      "deploymentId": "dd0954591a354e7c",
+      "provider": "google",
+      "displayName": "Gemini 2.5 Flash"
+    },
+    "gemini-2.5-flash-lite": {
+      "deploymentId": "d2bfdda257eade46",
+      "provider": "google",
+      "displayName": "Gemini 2.5 Flash Lite"
+    }
+  }
+}

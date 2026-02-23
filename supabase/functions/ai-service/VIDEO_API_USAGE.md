@@ -108,7 +108,15 @@ curl -X POST http://localhost:3000/ai-service/videos \
     "model": "veo-2.0-generate-001",
     "config": {
       "aspectRatio": "16:9",
-      "negativePrompt": "cartoon, drawing, low quality"
+      "negativePrompt": "cartoon, drawing, low quality",
+      "image": "xxxx",
+      "lastFrame": “xxxx“,
+      "referenceImages": [],
+      "video": "xxxx",
+      "aspectRatio": "9:16",
+      "resolution": "720p",
+      "durationSeconds": "8s",
+      "personGeneration": "allow_all"
     }
   }'
 ```
