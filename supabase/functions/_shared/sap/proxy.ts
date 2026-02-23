@@ -150,12 +150,43 @@ function createStreamChunk(
 }
 
 /**
+ * Normalize model name - handles various formats like:
+ * - "anthropic--claude-4.6-opus" -> "claude-4.6-opus"
+ * - "claude-4.6-opus" -> "claude-4.6-opus"
+ * - "anthropic/claude-4.6-opus" -> "claude-4.6-opus"
+ */
+function normalizeModelName(modelName: string): string {
+  // Remove provider prefixes
+  let normalized = modelName.replace(/^(anthropic|openai|google|azure|sap)[\-\/]+/i, "");
+  return normalized;
+}
+
+/**
  * Detect if model is Anthropic (Claude) based on model name or deployment ID
  */
 function isAnthropicModel(modelName: string, deploymentId: string): boolean {
-  return modelName.toLowerCase().includes("claude") || 
+  const normalized = normalizeModelName(modelName);
+  return normalized.toLowerCase().includes("claude") || 
          deploymentId.toLowerCase().includes("anthropic") ||
          deploymentId.toLowerCase().includes("claude");
+}
+
+/**
+ * Get the proper deployment ID, handling model name normalization
+ */
+function getResolvedDeploymentId(modelName: string): string {
+  // First try direct lookup
+  let deploymentId = getDeploymentId(modelName);
+  
+  // If the deployment ID is same as model name (not found), try normalized name
+  if (deploymentId === modelName) {
+    const normalized = normalizeModelName(modelName);
+    if (normalized !== modelName) {
+      deploymentId = getDeploymentId(normalized);
+    }
+  }
+  
+  return deploymentId;
 }
 
 /**
@@ -238,7 +269,7 @@ function transformAnthropicResponse(
 export async function handleChatCompletion(
   request: ChatCompletionRequest
 ): Promise<ChatCompletionResponse> {
-  const deploymentId = getDeploymentId(request.model);
+  const deploymentId = getResolvedDeploymentId(request.model);
   const isAnthropic = isAnthropicModel(request.model, deploymentId);
 
   if (ENABLE_LOGGING) {
@@ -300,22 +331,43 @@ export async function handleChatCompletion(
 export async function handleStreamingChatCompletion(
   request: ChatCompletionRequest
 ): Promise<ReadableStream<Uint8Array>> {
-  const deploymentId = getDeploymentId(request.model);
-  const sapRequest = transformRequest({ ...request, stream: true });
+  const deploymentId = getResolvedDeploymentId(request.model);
+  const isAnthropic = isAnthropicModel(request.model, deploymentId);
   const responseId = generateId();
 
   if (ENABLE_LOGGING) {
-    console.log("[Proxy] Streaming chat completion request:", JSON.stringify(sapRequest, null, 2));
+    console.log(`[Proxy] Streaming - Model: ${request.model}, Deployment: ${deploymentId}, IsAnthropic: ${isAnthropic}`);
   }
 
-  // Make request to SAP AI Core
-  const endpoint = `/v2/inference/deployments/${deploymentId}/chat/completions`;
+  let endpoint: string;
+  let requestBody: string;
   const headers = await createSAPHeaders();
+
+  if (isAnthropic) {
+    // Anthropic models use /invoke endpoint with stream parameter
+    endpoint = `/v2/inference/deployments/${deploymentId}/invoke`;
+    const anthropicRequest: any = transformToAnthropicInvoke(request);
+    anthropicRequest.stream = true;
+    requestBody = JSON.stringify(anthropicRequest);
+    
+    if (ENABLE_LOGGING) {
+      console.log("[Proxy] Anthropic streaming request:", requestBody);
+    }
+  } else {
+    // OpenAI-compatible models use /chat/completions
+    endpoint = `/v2/inference/deployments/${deploymentId}/chat/completions`;
+    const sapRequest = transformRequest({ ...request, stream: true });
+    requestBody = JSON.stringify(sapRequest);
+    
+    if (ENABLE_LOGGING) {
+      console.log("[Proxy] Chat streaming request:", requestBody);
+    }
+  }
 
   const response = await fetch(`${SAP_AI_CORE_CONFIG.aiApiUrl}${endpoint}`, {
     method: "POST",
     headers,
-    body: JSON.stringify(sapRequest),
+    body: requestBody,
   });
 
   if (!response.ok) {
@@ -328,7 +380,7 @@ export async function handleStreamingChatCompletion(
   const encoder = new TextEncoder();
   const decoder = new TextDecoder();
 
-  // Create a transform stream to convert SAP streaming format to OpenAI format
+  // Create a transform stream to convert SAP/Anthropic streaming format to OpenAI format
   const transformStream = new TransformStream<Uint8Array, Uint8Array>({
     start(controller) {
       // Send initial chunk with role
@@ -351,20 +403,50 @@ export async function handleStreamingChatCompletion(
           }
 
           try {
-            const sapChunk: SAPStreamChunk = JSON.parse(data);
+            const parsed = JSON.parse(data);
             
-            // Transform SAP chunk to OpenAI format
-            for (const choice of sapChunk.choices) {
-              const openAIChunk = createStreamChunk(
-                responseId,
-                request.model,
-                choice.delta.content || null,
-                undefined,
-                choice.finish_reason
-              );
+            if (isAnthropic) {
+              // Handle Anthropic streaming format
+              // Anthropic sends events like: content_block_delta, message_delta, etc.
+              if (parsed.type === "content_block_delta" && parsed.delta?.text) {
+                const openAIChunk = createStreamChunk(
+                  responseId,
+                  request.model,
+                  parsed.delta.text,
+                  undefined,
+                  null
+                );
+                const sseData = `data: ${JSON.stringify(openAIChunk)}\n\n`;
+                controller.enqueue(encoder.encode(sseData));
+              } else if (parsed.type === "message_delta" && parsed.delta?.stop_reason) {
+                const openAIChunk = createStreamChunk(
+                  responseId,
+                  request.model,
+                  null,
+                  undefined,
+                  parsed.delta.stop_reason === "end_turn" ? "stop" : parsed.delta.stop_reason
+                );
+                const sseData = `data: ${JSON.stringify(openAIChunk)}\n\n`;
+                controller.enqueue(encoder.encode(sseData));
+              } else if (parsed.type === "message_stop") {
+                controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+              }
+            } else {
+              // Handle OpenAI/SAP streaming format
+              const sapChunk: SAPStreamChunk = parsed;
               
-              const sseData = `data: ${JSON.stringify(openAIChunk)}\n\n`;
-              controller.enqueue(encoder.encode(sseData));
+              for (const choice of sapChunk.choices) {
+                const openAIChunk = createStreamChunk(
+                  responseId,
+                  request.model,
+                  choice.delta.content || null,
+                  undefined,
+                  choice.finish_reason
+                );
+                
+                const sseData = `data: ${JSON.stringify(openAIChunk)}\n\n`;
+                controller.enqueue(encoder.encode(sseData));
+              }
             }
           } catch (e) {
             // If parsing fails, might be partial data or different format
@@ -375,6 +457,10 @@ export async function handleStreamingChatCompletion(
               controller.enqueue(encoder.encode(sseData));
             }
           }
+        } else if (line.startsWith("event: ") && isAnthropic) {
+          // Anthropic uses event: prefix for event types, followed by data:
+          // We handle the data in the data: section above
+          continue;
         }
       }
     },
