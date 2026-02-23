@@ -344,14 +344,16 @@ export async function handleStreamingChatCompletion(
   const headers = await createSAPHeaders();
 
   if (isAnthropic) {
-    // Anthropic models use /invoke endpoint with stream parameter
+    // Anthropic models use /invoke endpoint
+    // Note: SAP AI Core's Anthropic endpoint may not support streaming
+    // Fall back to non-streaming and simulate stream output
     endpoint = `/v2/inference/deployments/${deploymentId}/invoke`;
     const anthropicRequest: any = transformToAnthropicInvoke(request);
-    anthropicRequest.stream = true;
+    // Don't add stream parameter - SAP AI Core Anthropic doesn't support it
     requestBody = JSON.stringify(anthropicRequest);
     
     if (ENABLE_LOGGING) {
-      console.log("[Proxy] Anthropic streaming request:", requestBody);
+      console.log("[Proxy] Anthropic invoke request (simulated streaming):", requestBody);
     }
   } else {
     // OpenAI-compatible models use /chat/completions
@@ -471,7 +473,35 @@ export async function handleStreamingChatCompletion(
     },
   });
 
-  // Pipe the response body through our transform stream
+  // For Anthropic, the response is not streamed - simulate streaming from the complete response
+  if (isAnthropic) {
+    const responseJson = await response.json();
+    const content = responseJson.content?.[0]?.text || "";
+    
+    return new ReadableStream({
+      start(controller) {
+        // Send initial chunk with role
+        const initialChunk = createStreamChunk(responseId, request.model, null, "assistant", null);
+        controller.enqueue(encoder.encode(`data: ${JSON.stringify(initialChunk)}\n\n`));
+        
+        // Send content in chunks to simulate streaming
+        const chunkSize = 50; // characters per chunk
+        for (let i = 0; i < content.length; i += chunkSize) {
+          const textChunk = content.slice(i, i + chunkSize);
+          const chunk = createStreamChunk(responseId, request.model, textChunk, undefined, null);
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify(chunk)}\n\n`));
+        }
+        
+        // Send final chunk with finish reason
+        const finalChunk = createStreamChunk(responseId, request.model, null, undefined, "stop");
+        controller.enqueue(encoder.encode(`data: ${JSON.stringify(finalChunk)}\n\n`));
+        controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+        controller.close();
+      },
+    });
+  }
+
+  // Pipe the response body through our transform stream for OpenAI models
   if (response.body) {
     return response.body.pipeThrough(transformStream);
   }
