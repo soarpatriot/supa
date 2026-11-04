@@ -3,3 +3,5 @@ supabase/.temp
 .env.local
 
 .claude
+# Codex editor local config
+.codex/
